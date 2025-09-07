@@ -20,6 +20,8 @@ if [ ! -d "venv" ]; then
     $PYTHON_CMD -m venv venv
     if [ $? -ne 0 ]; then
         echo "创建虚拟环境失败。请确保已安装venv模块。"
+        echo "正在清理残留文件..."
+        rm -rf venv
         exit 1
     fi
 fi
