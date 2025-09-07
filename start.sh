@@ -4,12 +4,22 @@
 PROJECT_DIR=$(dirname "$(readlink -f "$0")")
 cd "$PROJECT_DIR" || exit
 
+# 检查可用的Python命令
+if command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+elif command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    echo "错误：未找到python或python3命令。请先安装Python。"
+    exit 1
+fi
+
 # 创建虚拟环境
 if [ ! -d "venv" ]; then
     echo "正在创建虚拟环境..."
-    python3 -m venv venv
+    $PYTHON_CMD -m venv venv
     if [ $? -ne 0 ]; then
-        echo "创建虚拟环境失败。请确保已安装python3和venv模块。"
+        echo "创建虚拟环境失败。请确保已安装venv模块。"
         exit 1
     fi
 fi
