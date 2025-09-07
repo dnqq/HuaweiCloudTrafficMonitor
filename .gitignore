@@ -1,0 +1,13 @@
+# 虚拟环境
+venv/
+__pycache__/
+
+# 环境变量文件
+.env
+
+# 状态文件
+*.json
+
+# IDE/编辑器特定文件
+.vscode/
+.idea/
