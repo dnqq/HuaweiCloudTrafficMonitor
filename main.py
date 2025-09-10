@@ -34,13 +34,22 @@ def send_telegram_message(message):
         print(f"发送Telegram通知失败: {e}")
         return False
 
-def shutdown_server(server_name, amount):
+def shutdown_server(server_name, amount, original_amount, start_time, end_time, usage_type_name):
     """执行服务器关机。"""
     print("关机程序启动...")
     # 发送10次告警
     for i in range(10):
         print(f"发送第 {i+1}/10 次关机告警...")
-        send_telegram_message(f"‼️ *紧急警告* ‼️\n服务器: *{server_name}*\n剩余流量: *{amount:.2f} GB*，极低！服务器即将关闭！\n(告警 {i+1}/10)")
+        message = (
+            f"‼️ *紧急警告* ‼️\n"
+            f"服务器: *{server_name}*\n"
+            f"剩余流量: *{amount:.2f} GB*，极低！服务器即将关闭！\n"
+            f"套餐总流量: *{original_amount:.2f} GB*\n"
+            f"流量类型: *{usage_type_name}*\n"
+            f"统计周期: {start_time[:10]} to {end_time[:10]}\n"
+            f"(告警 {i+1}/10)"
+        )
+        send_telegram_message(message)
         time.sleep(5) # 每次发送后等待5秒
 
     print("发送最终关机通知...")
@@ -127,12 +136,16 @@ if __name__ == '__main__':
         # --- 核心逻辑 ---
         for resource in free_resources:
             amount = resource.get("amount", 0)
-            print(f"资源ID: {resource.get('free_resource_id')}, 剩余流量: {amount} GB")
+            original_amount = resource.get("original_amount", 0)
+            start_time = resource.get("start_time", "N/A")
+            end_time = resource.get("end_time", "N/A")
+            usage_type_name = resource.get("usage_type_name", "N/A")
+            print(f"资源ID: {resource.get('free_resource_id')}, 剩余流量: {amount} GB, 套餐总量: {original_amount} GB")
 
             # 等级1: 关机
             if amount < T1:
                 print(f"流量低于阈值1 ({T1}GB)，启动关机程序。")
-                shutdown_server(SERVER_NAME, amount)
+                shutdown_server(SERVER_NAME, amount, original_amount, start_time, end_time, usage_type_name)
                 break # 关机后无需继续处理
             
             # 等级2: 频繁告警
@@ -141,7 +154,12 @@ if __name__ == '__main__':
                 if not DEBUG_MODE and now - last_run_time < 3600: # 1小时
                     print("距离上次运行不足1小时，跳过。")
                     continue
-                message = f"🟠 *中级警告* 🟠\n服务器: *{SERVER_NAME}*\n剩余流量为 *{amount:.2f} GB*，已低于 {T2} GB。"
+                message = (f"🟠 *中级警告* 🟠\n"
+                           f"服务器: *{SERVER_NAME}*\n"
+                           f"剩余流量为 *{amount:.2f} GB*，已低于 {T2} GB。\n"
+                           f"套餐总流量: *{original_amount:.2f} GB*\n"
+                           f"流量类型: *{usage_type_name}*\n"
+                           f"统计周期: {start_time[:10]} to {end_time[:10]}")
                 send_telegram_message(message)
                 state['last_run_time'] = now
                 state['last_notify_time'] = now
@@ -155,7 +173,12 @@ if __name__ == '__main__':
                 
                 state['last_run_time'] = now # 记录运行时间
                 if DEBUG_MODE or now - last_notify_time > 24 * 3600: # 24小时
-                    message = f"🟡 *低级警告* 🟡\n服务器: *{SERVER_NAME}*\n剩余流量为 *{amount:.2f} GB*，已低于 {T3} GB。"
+                    message = (f"🟡 *低级警告* 🟡\n"
+                               f"服务器: *{SERVER_NAME}*\n"
+                               f"剩余流量为 *{amount:.2f} GB*，已低于 {T3} GB。\n"
+                               f"套餐总流量: *{original_amount:.2f} GB*\n"
+                               f"流量类型: *{usage_type_name}*\n"
+                               f"统计周期: {start_time[:10]} to {end_time[:10]}")
                     send_telegram_message(message)
                     state['last_notify_time'] = now # 记录通知时间
                 else:
@@ -170,7 +193,12 @@ if __name__ == '__main__':
 
                 state['last_run_time'] = now
                 if DEBUG_MODE or now - last_notify_time > 24 * 3600:
-                    message = f"🟢 *流量报告* 🟢\n服务器: *{SERVER_NAME}*\n当前剩余流量为 *{amount:.2f} GB*。"
+                    message = (f"🟢 *流量报告* 🟢\n"
+                               f"服务器: *{SERVER_NAME}*\n"
+                               f"当前剩余流量为 *{amount:.2f} GB*。\n"
+                               f"套餐总流量: *{original_amount:.2f} GB*\n"
+                               f"流量类型: *{usage_type_name}*\n"
+                               f"统计周期: {start_time[:10]} to {end_time[:10]}")
                     send_telegram_message(message)
                     state['last_notify_time'] = now
                 else:
