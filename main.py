@@ -34,7 +34,7 @@ def send_telegram_message(message):
         print(f"发送Telegram通知失败: {e}")
         return False
 
-def shutdown_server(server_name, amount, original_amount, start_time, end_time, usage_type_name):
+def shutdown_server(server_name, amount, original_amount, used_amount, start_time, end_time, usage_type_name):
     """执行服务器关机。"""
     print("关机程序启动...")
     # 发送10次告警
@@ -43,8 +43,9 @@ def shutdown_server(server_name, amount, original_amount, start_time, end_time, 
         message = (
             f"‼️ *紧急警告* ‼️\n"
             f"服务器: *{server_name}*\n"
-            f"剩余流量: *{amount:.2f} GB*，极低！服务器即将关闭！\n"
             f"套餐总流量: *{original_amount:.2f} GB*\n"
+            f"已用流量: *{used_amount:.2f} GB*\n"
+            f"剩余流量: *{amount:.2f} GB*，极低！服务器即将关闭！\n"
             f"流量类型: *{usage_type_name}*\n"
             f"统计周期: {start_time[:10]} to {end_time[:10]}\n"
             f"(告警 {i+1}/10)"
@@ -137,6 +138,7 @@ if __name__ == '__main__':
         for resource in free_resources:
             amount = resource.get("amount", 0)
             original_amount = resource.get("original_amount", 0)
+            used_amount = original_amount - amount
             start_time = resource.get("start_time", "N/A")
             end_time = resource.get("end_time", "N/A")
             usage_type_name = resource.get("usage_type_name", "N/A")
@@ -145,7 +147,7 @@ if __name__ == '__main__':
             # 等级1: 关机
             if amount < T1:
                 print(f"流量低于阈值1 ({T1}GB)，启动关机程序。")
-                shutdown_server(SERVER_NAME, amount, original_amount, start_time, end_time, usage_type_name)
+                shutdown_server(SERVER_NAME, amount, original_amount, used_amount, start_time, end_time, usage_type_name)
                 break # 关机后无需继续处理
             
             # 等级2: 频繁告警
@@ -156,8 +158,9 @@ if __name__ == '__main__':
                     continue
                 message = (f"🟠 *中级警告* 🟠\n"
                            f"服务器: *{SERVER_NAME}*\n"
-                           f"剩余流量为 *{amount:.2f} GB*，已低于 {T2} GB。\n"
                            f"套餐总流量: *{original_amount:.2f} GB*\n"
+                           f"已用流量: *{used_amount:.2f} GB*\n"
+                           f"剩余流量为 *{amount:.2f} GB*，已低于 {T2} GB。\n"
                            f"流量类型: *{usage_type_name}*\n"
                            f"统计周期: {start_time[:10]} to {end_time[:10]}")
                 send_telegram_message(message)
@@ -175,8 +178,9 @@ if __name__ == '__main__':
                 if DEBUG_MODE or now - last_notify_time > 24 * 3600: # 24小时
                     message = (f"🟡 *低级警告* 🟡\n"
                                f"服务器: *{SERVER_NAME}*\n"
-                               f"剩余流量为 *{amount:.2f} GB*，已低于 {T3} GB。\n"
                                f"套餐总流量: *{original_amount:.2f} GB*\n"
+                               f"已用流量: *{used_amount:.2f} GB*\n"
+                               f"剩余流量为 *{amount:.2f} GB*，已低于 {T3} GB。\n"
                                f"流量类型: *{usage_type_name}*\n"
                                f"统计周期: {start_time[:10]} to {end_time[:10]}")
                     send_telegram_message(message)
@@ -195,8 +199,9 @@ if __name__ == '__main__':
                 if DEBUG_MODE or now - last_notify_time > 24 * 3600:
                     message = (f"🟢 *流量报告* 🟢\n"
                                f"服务器: *{SERVER_NAME}*\n"
-                               f"当前剩余流量为 *{amount:.2f} GB*。\n"
                                f"套餐总流量: *{original_amount:.2f} GB*\n"
+                               f"已用流量: *{used_amount:.2f} GB*\n"
+                               f"当前剩余流量为 *{amount:.2f} GB*。\n"
                                f"流量类型: *{usage_type_name}*\n"
                                f"统计周期: {start_time[:10]} to {end_time[:10]}")
                     send_telegram_message(message)
